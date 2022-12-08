@@ -38,10 +38,10 @@ installer_options=(
 
 # only use the nix-daemon settings if on darwin (which get ignored) or systemd is supported
 if [[ $OSTYPE =~ darwin || -e /run/systemd/system ]]; then
-  installer_options+=(
-    --daemon
-    --daemon-user-count "$(python3 -c 'import multiprocessing as mp; print(mp.cpu_count() * 2)')"
-  )
+  add_config "build-users-group ="
+  sudo mkdir -p /etc/nix
+  sudo chmod 0755 /etc/nix
+  sudo cp $workdir/nix.conf /etc/nix/nix.conf
 else
   # "fix" the following error when running nix*
   # error: the group 'nixbld' specified in 'build-users-group' does not exist
