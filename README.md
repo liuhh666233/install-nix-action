@@ -18,7 +18,7 @@ or [pin nixpkgs yourself](https://nix.dev/reference/pinning-nixpkgs)
 - Allows specifying extra Nix configuration options via `extra_nix_config`
 - Allows specifying `$NIX_PATH` and channels via `nix_path`
 - Share `/nix/store` between builds using [cachix-action](https://github.com/cachix/cachix-action) for simple binary cache setup to speed up your builds and share binaries with your team
-- Enables `flakes` and `nix-command` experimental features by default (to disable, set `experimental-features` via `extra_nix_config`)
+- Enables KVM on supported machines: run VMs and NixOS tests with full hardware-acceleration
 
 ## Usage
 
@@ -33,8 +33,8 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: cachix/install-nix-action@v22
+    - uses: actions/checkout@v4
+    - uses: cachix/install-nix-action@v27
       with:
         nix_path: nixpkgs=channel:nixos-unstable
     - run: nix-build
@@ -51,8 +51,8 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: cachix/install-nix-action@v22
+    - uses: actions/checkout@v4
+    - uses: cachix/install-nix-action@v27
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
     - run: nix build
@@ -75,6 +75,31 @@ To install Nix from any commit, go to [the corresponding installer_test action](
 
 - `enable_kvm`: whether to enable KVM for hardware-accelerated virtualization on Linux. Enabled by default if available.
 
+
+## Differences from the default Nix installer
+
+Some settings have been optimised for use in CI environments:
+
+- `nix.conf` settings. Override these defaults with `extra_nix_config`:
+
+  - The experimental `flakes` and `nix-command` features are enabled. Disable by overriding `experimental-features` in `extra_nix_config`.
+
+  - `max-jobs` is set to `auto`.
+
+  - `show-trace` is set to `true`.
+
+  - `$USER` is added to `trusted-users`.
+
+  - `$GITHUB_TOKEN` is added to `access_tokens` if no other `github_access_token` is provided.
+
+  - `always-allow-substitutes` is set to `true`.
+
+  - `ssl-cert-file` is set to `/etc/ssl/cert.pem` on macOS.
+
+- KVM is enabled on Linux if available. Disable by setting `enable_kvm: false`.
+
+- `$TMPDIR` is set to `$RUNNER_TEMP` if empty.
+
 ---
 
 ## FAQ
@@ -93,10 +118,9 @@ With the following inputs:
 ```yaml
 - uses: cachix/install-nix-action@vXX
   with:
+    enable_kvm: true
     extra_nix_config: "system-features = nixos-test benchmark big-parallel kvm"
 ```
-
-[Note that there's no hardware acceleration on GitHub Actions.](https://github.com/actions/virtual-environments/issues/183#issuecomment-610723516).
 
 ### How do I install packages via nix-env from the specified `nix_path`?
 
@@ -122,7 +146,7 @@ Otherwise, you can add any binary cache to nix.conf using
 install-nix-action's own `extra_nix_config` input:
 
 ```yaml
-- uses: cachix/install-nix-action@v22
+- uses: cachix/install-nix-action@v27
   with:
     extra_nix_config: |
       trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
